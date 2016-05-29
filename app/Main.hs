@@ -1,8 +1,8 @@
 module Main where
 
-import System.IO
-import System.Environment
-import Repl
+import           Repl
+import           System.Environment
+import           System.IO
 
 main :: IO ()
 main = do

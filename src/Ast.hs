@@ -47,7 +47,7 @@ showVal Func{params=args, vararg=varargs, body=body, closure=env} =
              Nothing -> ""
              Just arg -> " . " ++ arg) ++ ") ...)"
 showVal (IOFunc _) = "<IO primitive>"
-showVal (Port _) = "<IO port>"
+showVal (Port _) = "<IO Port>"
 
 
 unwordsList :: [LispVal] -> String

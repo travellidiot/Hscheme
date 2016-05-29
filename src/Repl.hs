@@ -1,12 +1,12 @@
 module Repl where
 
-import Control.Monad
-import System.Environment
-import System.IO
+import           Control.Monad
+import           System.Environment
+import           System.IO
 
-import Ast
-import Eval
-import SymbolTable
+import           Ast
+import           Eval
+import           SymbolTable
 
 flushStr :: String -> IO ()
 flushStr prompt = putStr prompt >> hFlush stdout
@@ -15,7 +15,7 @@ readPrompt :: String -> IO String
 readPrompt prompt = flushStr prompt >> getLine
 
 evalString :: Env -> String -> IO String
-evalString env expr = runIOThrows $ fmap show $ (liftThrows $ readExpr expr) >>= eval env
+evalString env expr = runIOThrows $ fmap show $ liftThrows (readExpr expr) >>= eval env
 
 evalAndPrint :: Env -> String -> IO ()
 evalAndPrint env expr = evalString env expr >>= putStrLn

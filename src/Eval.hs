@@ -2,15 +2,15 @@
 
 module Eval where
 
-import Text.ParserCombinators.Parsec
-import Control.Monad
-import Control.Monad.Except
-import System.IO
-import Data.Maybe
-import Data.Array
-import Ast
-import SymbolTable
-import Parser
+import           Ast
+import           Control.Monad
+import           Control.Monad.Except
+import           Data.Array
+import           Data.Maybe
+import           Parser
+import           SymbolTable
+import           System.IO
+import           Text.ParserCombinators.Parsec
 
 liftThrows :: ThrowsError a -> IOThrowsError a
 liftThrows (Left err) = throwError err
@@ -51,7 +51,7 @@ makePort :: IOMode -> [LispVal] -> IOThrowsError LispVal
 makePort mode [String filename] = liftM Port $ liftIO $ openFile filename mode
 
 closePort :: [LispVal] -> IOThrowsError LispVal
-closePort [Port port] = liftIO $ hClose port >> (return $ Bool True)
+closePort [Port port] = liftIO $ hClose port >> return (Bool True)
 closePort _ = return $ Bool False
 
 readProc :: [LispVal] -> IOThrowsError LispVal
@@ -114,10 +114,8 @@ eval env form@(List (Atom "case" : key : clauses)) =
             if Bool True `elem` equality
             then liftM last $ mapM (eval env) exprs
             else eval env $ List (Atom "case" : key : tail clauses) where
-                elem x@(Bool value) ((Bool v):[]) = value == v
-                elem x@(Bool value) ((Bool v):xs) = if value == v
-                                                    then True
-                                                    else elem x xs
+                elem x@(Bool value) [Bool v] = value == v
+                elem x@(Bool value) (Bool v : xs) = (value == v) || elem x xs
         _ -> throwError $ BadSpecialForm "Unrecognized special form" form
 
 eval env (List [Atom "set!", Atom var, form]) = eval env form >>= setVar env var
@@ -158,8 +156,8 @@ apply (Func params varargs body closure) args =
 apply (IOFunc func) args = func args
 
 primitiveBindings :: IO Env
-primitiveBindings = nullEnv >>= (flip bindVars $ map (makeFunc IOFunc) ioPrimitives
-                                                ++ map (makeFunc PrimitiveFunc) primitives)
+primitiveBindings = nullEnv >>= flip bindVars (map (makeFunc IOFunc) ioPrimitives
+                                               ++ map (makeFunc PrimitiveFunc) primitives)
    where makeFunc constructor (var, func) = (var, constructor func)
 
 makeFunc :: Maybe String -> Env -> [LispVal] -> [LispVal] -> IOThrowsError LispVal
@@ -292,22 +290,21 @@ cons [x1, x2] = return $ DottedList [x1] x2
 cons badArgList = throwError $ NumArgs 2 badArgList
 
 eqv :: [LispVal] -> ThrowsError LispVal
-eqv [(Number arg1), (Number arg2)]       = return $ Bool $ arg1 == arg2
-eqv [(Bool arg1), (Bool arg2)]           = return $ Bool $ arg1 == arg2
-eqv [(String arg1), (String arg2)]       = return $ Bool $ arg1 == arg2
-eqv [(Atom arg1), (Atom arg2)]           = return $ Bool $ arg1 == arg2
-eqv [(Ratio arg1), (Ratio arg2)]         = return $ Bool $ arg1 == arg2
-eqv [(Complex arg1), (Complex arg2)]     = return $ Bool $ arg1 == arg2
-eqv [(Float arg1), (Float arg2)]         = return $ Bool $ arg1 == arg2
-eqv [(Character arg1), (Character arg2)] = return $ Bool $ arg1 == arg2
+eqv [Number arg1, Number arg2]       = return $ Bool $ arg1 == arg2
+eqv [Bool arg1, Bool arg2]           = return $ Bool $ arg1 == arg2
+eqv [String arg1, String arg2]       = return $ Bool $ arg1 == arg2
+eqv [Atom arg1, Atom arg2]           = return $ Bool $ arg1 == arg2
+eqv [Ratio arg1, Ratio arg2]         = return $ Bool $ arg1 == arg2
+eqv [Complex arg1, Complex arg2]     = return $ Bool $ arg1 == arg2
+eqv [Float arg1, Float arg2]         = return $ Bool $ arg1 == arg2
+eqv [Character arg1, Character arg2] = return $ Bool $ arg1 == arg2
 -- eqv [(Vector arg1), (Vector arg2)]       = return $ Bool $ arg1 == arg2
-eqv [(Vector vec1), (Vector vec2)]       = eqv [List $ elems vec1, List $ elems vec2]
-eqv [(List arg1), (List arg2)]           = return $ Bool $ (length arg1 == length arg2) &&
-                                                           (all eqvPair $ zip arg1 arg2)
+eqv [Vector vec1, Vector vec2]       = eqv [List $ elems vec1, List $ elems vec2]
+eqv [List arg1, List arg2]           = return $ Bool $ (length arg1 == length arg2) && all eqvPair (zip arg1 arg2)
                                                         where eqvPair (x1, x2) = case eqv [x1, x2] of
                                                                                     Left err -> False
                                                                                     Right (Bool value) -> value
-eqv [(DottedList head1 tail1), (DottedList head2 tail2)] = eqv [List $ head1++[tail1], List $ head2++[tail2]]
+eqv [DottedList head1 tail1, DottedList head2 tail2] = eqv [List $ head1++[tail1], List $ head2++[tail2]]
 eqv [_, _]                               = return $ Bool False
 eqv badArgList                           = throwError $ NumArgs 2 badArgList
 
@@ -323,8 +320,7 @@ unpackEquals arg1 arg2 (AnyUnpacker unpacker) =
 
 
 equal :: [LispVal] -> ThrowsError LispVal
-equal [(List lst1), (List lst2)] = return $ Bool $ (length lst1 == length lst2) &&
-                                                   (all equalPair $ zip lst1 lst2)
+equal [List lst1, List lst2] = return $ Bool $ (length lst1 == length lst2) && all equalPair (zip lst1 lst2)
                                                 where equalPair (x1, x2) = case equal [x1, x2] of
                                                                             Left err -> False
                                                                             Right (Bool value) -> value
