@@ -1,11 +1,12 @@
 module Ast where
-import Data.Ratio
-import Data.Complex
-import Data.Array
-import Data.IORef
-import Control.Monad.Except
-import Text.ParserCombinators.Parsec
-import System.IO
+import           Control.Monad.Except
+import           Data.Array
+import           Data.Complex
+import           Data.IORef
+import           Data.Ratio
+import           System.IO
+import           Text.ParserCombinators.Parsec
+
 
 type Env = IORef [(String, IORef LispVal)]
 

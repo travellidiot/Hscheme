@@ -12,6 +12,8 @@ import           SymbolTable
 import           System.IO
 import           Text.ParserCombinators.Parsec
 
+
+
 liftThrows :: ThrowsError a -> IOThrowsError a
 liftThrows (Left err) = throwError err
 liftThrows (Right val) = return val
